@@ -1,12 +1,12 @@
 ###
-##  $Id: Syslog.pm,v 1.6 2000/11/09 22:15:37 bseib Exp $
+##  $Id: Syslog.pm,v 1.8 2002/01/21 03:24:12 bseib Exp $
 ###
 package Tie::Syslog;
 
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 
-$VERSION = '1.04';
+$VERSION = '1.07';
 
 use Sys::Syslog;
 
@@ -38,8 +38,13 @@ sub ExtendedSTDERR {
 }
 
 sub TIEHANDLE {
-	my $class    = shift;
+	## first arg *could* be an optional filehandle glob ref
 	my $this = {};
+	if ( 'GLOB' eq ref($_[0]) ) {
+		$this->{fh} = shift;
+	}
+
+	my $class    = shift;
 	my $facil_prior     = shift || 'local0.error';
 	return undef unless ($facil_prior =~ /^((\w|\d)+)\.((\w|\d)+)$/);
 	$this->{'facility'} = $1;
@@ -81,6 +86,38 @@ sub PRINTF {
 	syslog $this->{'priority'}, @_;
 }
 
+sub FILENO {
+	my $this = shift;
+	if ( exists($this->{fh}) ) {
+		return fileno($this->{fh});
+	}
+	return undef;
+}
+
+sub EOF {
+	my $this = shift;
+	if ( exists($this->{fh}) ) {
+		return eof($this->{fh});
+	}
+	return undef;
+}
+
+sub BINMODE {
+	my $this = shift;
+	if ( exists($this->{fh}) ) {
+		return binmode($this->{fh});
+	}
+	return undef;
+}
+
+sub TELL {
+	my $this = shift;
+	if ( exists($this->{fh}) ) {
+		return tell($this->{fh});
+	}
+	return undef;
+}
+
 sub DESTROY {
 	my $this = shift;
 
@@ -116,7 +153,7 @@ Tie::Syslog - Tie a filehandle to Syslog. If you Tie STDERR, then all STDERR err
 
   ###
   ##  Pass up to four args:
-  ##    facility.priority   ('local0.error')
+  ##    facility.priority   ('local0.error')  ## note Linux uses 'err'
   ##    identity            ('my_program')
   ##    log options         ('pid')
   ##    setlogsock          ('inet'|'unix')
@@ -127,6 +164,17 @@ Tie::Syslog - Tie a filehandle to Syslog. If you Tie STDERR, then all STDERR err
   printf MYLOG "Error %d", 42;    ## syslog as "Error 42"
 
   untie *MYLOG;
+
+  ###
+  ##  Special case: pass a ref to file glob as first arg.
+  ##  This stores the filehandle and uses it to implement calls
+  ##  like fileno() and binmode() etc...
+  ###
+  tie *STDERR, \*STDERR, 'Tie::Syslog','local0.error','my_app','pid','inet';
+
+  ###
+  ##  yeah, it looks funny, but is the only way...?
+  ###
 
 
 =head1 DESCRIPTION
@@ -147,8 +195,9 @@ to the proper channels in syslog. I suggest reviewing a manpage for syslog
 on your local system to identify what the facilities and priorities actually
 are. Nonetheless, this first argument is specified as a string consisting
 of the facility followed by a dot, followed by the priority. For example,
-the default setting is 'local0.error'. If you do not specify a first arg,
-this default is used.
+the default setting is 'local0.error'. (Note: I believe Linux uses 'err'
+rather than 'error'.) If you do not specify a first arg, this default is
+used.
 
 The second argument is an identifier string. This is the string that shows
 up in evey line of output that syslog writes. You may use this identifier
@@ -176,6 +225,17 @@ we'll test the symbol table to see if the routine exists. If the routine
 does not exist, then the fourth argument is silently ignored. I did not
 want to require people to have "the latest" version of perl just to use
 this module.
+
+
+Note:  You can now optionally pass a reference to a Filehandle as the *very*
+first arg (before the 'Tie::Syslog' even...)  The *only* time you'd do
+this is if you are experiencing trouble using your tied filehandle with
+other code that expects to do calls like fileno() and binmode() to
+operate on this tied filehandle. The TIEHANDLE api gives us no way (that
+I have found) to get access to the actual tied variable, or filehandle in
+this case. So, I have resorted to just passing it in as a arg right up front
+and just storing it in the object. **THERE ARE PROBLEMS WITH THIS!!!** Be
+aware, those of you this may affect...
 
 
 An aside on using 'STDERR':
@@ -234,13 +294,13 @@ have syslog and would like this? Tell me...
 
 =head1 AUTHOR
 
-Copyright (c) 2000 Broc Seib. All rights reserved. This program is free
+Copyright (c) 1999-2002 Broc Seib. All rights reserved. This program is free
 software; you can redistribute it and/or modify it under the same terms as
 Perl itself.
 
 =head1 REVISION
 
-$Id: Syslog.pm,v 1.6 2000/11/09 22:15:37 bseib Exp $
+$Id: Syslog.pm,v 1.8 2002/01/21 03:24:12 bseib Exp $
 
 =head1 SEE ALSO
 
