@@ -4,16 +4,7 @@ package Tie::Syslog;
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 
-require Exporter;
-
-@ISA = qw(Exporter);
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
-@EXPORT = qw(
-	
-);
-$VERSION = '1.01';
+$VERSION = '1.02';
 
 use Sys::Syslog;
 
@@ -59,7 +50,24 @@ sub TIEHANDLE {
 	$this->{'log_opts'} = shift || 'pid';
 	$this->{'isSTDERR'} = 0;
 
-	## setup syslog
+	## setup syslog setlogsock
+	##
+	## Many still have original Sys::Syslog which does not have
+	## the setlogsock routine. There is no $VERSION constant to
+	## test in Sys::Syslog, so we'll test the symbol table to see
+	## if the routine exists. If not, skip this gracefully.
+	if ( defined($Sys::Syslog::{'setlogsock'}) ) {
+		my $sock = shift || 'inet';
+		return undef unless ($sock =~ /^(unix|inet)$/);
+
+		## boy this is messy... must be this way, else compile time error
+		no strict 'refs';
+		my $call = 'Sys::Syslog::setlogsock';
+		&$call($sock);
+		use strict 'refs';
+	}
+
+	## open a syslog connection
 	openlog $this->{'identity'},$this->{'log_opts'},$this->{'facility'};
 
 	return bless $this, $class;
@@ -107,12 +115,13 @@ Tie::Syslog - Perl extension for tie'ing a filehandle to Syslog
   use Tie::Syslog;
 
   ###
-  ##  Pass three args:
+  ##  Pass up to four args:
   ##    facility.priority   ('local0.error')
   ##    identity            ('my_program')
   ##    log options         ('pid')
+  ##    setlogsock          ('inet'|'unix')
   ###
-  tie *MYLOG, 'Tie::Syslog', 'local0.error', 'my_program', 'pid';
+  tie *MYLOG, 'Tie::Syslog','local0.error','my_program','pid','inet';
 
   print MYLOG "I made an error."; ## this will be syslogged
   printf MYLOG "Error %d", 42;    ## syslog as "Error 42"
@@ -124,11 +133,13 @@ Tie::Syslog - Perl extension for tie'ing a filehandle to Syslog
 
 This module allows you to tie a filehandle (output only) to syslog. This
 becomes useful in general when you want to capture any activity that
-happens on STDERR and see that it is syslogged for later perusal. This
-module depends on the Sys::Syslog module to actually get info to syslog.
+happens on STDERR and see that it is syslogged for later perusal. You
+can also create an arbitrary filehandle, say LOG, and send stuff to syslog
+by printing to this filehandle. This module depends on the Sys::Syslog
+module to actually get info to syslog.
 
 Tie your filehandle to syslog using a glob to the filehandle. When it is
-tied to the 'Tie::Syslog' class, you may optionally pass three arguments
+tied to the 'Tie::Syslog' class, you may optionally pass four arguments
 that determine the behavior of the output bound to syslog.
 
 You first specify a facility and priority to direct your filehandle traffic
@@ -155,6 +166,17 @@ looking inside your site_perl/$archname/sys/syslog.ph for other such values.
 If you do not pass this third argument, it defaults to the string 'pid',
 which makes syslog put a [12345] pid value on each line of output.
 
+The fourth argument is either the string 'inet' or 'unix'. This is
+passed to the Sys::Syslog::setlogsock() call to specify the socket type
+to be used when opening the connection to syslog. If this argument is
+not specified, then the default used is 'inet'. Many perl installations
+still have original Sys::Syslog which does not have the setlogsock()
+routine. There is also no $VERSION constant to test in Sys::Syslog, so
+we'll test the symbol table to see if the routine exists. If the routine
+does not exist, then the fourth argument is silently ignored. I did not
+want to require people to have "the latest" version of perl just to use
+this module.
+
 
 An aside on using 'STDERR':
 
@@ -167,7 +189,7 @@ for __DIE__ and __WARN__. Because this module really has no knowledge
 of what filehandle is being tied, I contemplated trying to make this
 automatic for when the STDERR filehandle is used. But, alas, one may
 have a different name for what is really STDERR, plus the TIEHANDLE
-function has no way of knowing what the filhandle symbol is anyway.
+function has no way of knowing what the filehandle symbol is anyway.
 I also decided to put the logic of how to handle the two signal cases
 into this module, when perhaps they might be more suited to be at the
 level of whoever is calling this module. Well, you don't have to call
@@ -186,20 +208,27 @@ a common use of this module would be to capture STDERR for syslogging.
   };
   die "Killing me softly?!";       ## syslogged, then script ends
 
-  undef $x;
+  undef $x;                        ## be sure to do this, else warns!
   untie *STDERR;
 
 
-When used with STDERR, combined with the good habit of using the perl -w
+When used with STDERR, combined with the good habit of using the perl C<-w>
 switch, this module happens to be useful in catching unexpected errors in
 any of your code, or team's code. Tie::Syslog is pretty brain-dead. However,
 it can become quite flexible if you investigate your options with the
 actual syslog daemon. Syslog has a variety of options available, including
 notifying console, logging to other machines running syslog, or email
-support in the event of "bad things". Consult your syslog documentation
+support in the event of Bad Things. Consult your syslog documentation
 to get /etc/syslog.conf setup by your sysadmin and use Tie::Syslog to get
 information into those channels.
 
+
+=head1 BUGS
+
+If you do not specify an identity (2nd arg) to tie() it defaults to
+the name of the executable via special var $0. It is split by the
+character '/', so non-unix systems will end up with a "full name"
+for its identity, if left unspecified.
 
 =head1 AUTHOR
 
@@ -209,7 +238,7 @@ Perl itself.
 
 =head1 REVISION
 
-$Id: Syslog.pm,v 1.1 1999/03/12 22:26:10 bseib Exp $
+$Id: Syslog.pm,v 1.4 1999/09/02 04:02:48 bseib Exp $
 
 =head1 SEE ALSO
 
