@@ -1,10 +1,12 @@
-
+###
+##  $Id: Syslog.pm,v 1.6 2000/11/09 22:15:37 bseib Exp $
+###
 package Tie::Syslog;
 
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 
-$VERSION = '1.03';
+$VERSION = '1.04';
 
 use Sys::Syslog;
 
@@ -27,11 +29,7 @@ sub ExtendedSTDERR {
 	$this->{'die_sub'}  = $SIG{__DIE__};
 	$SIG{__WARN__} = sub { print STDERR @_; };
 	$SIG{__DIE__} = sub {  ## still dies upon return
-		my $i = 0;
-		my @x;
-		while ( @x = caller($i++) ) {
-			return if ($x[3] =~ /\(eval\)/);  ## died from eval exception
-		}
+		return if $^S; ## see perldoc perlvar and perldoc -f die perlfunc
 		print STDERR @_;
 	};	
 
@@ -88,8 +86,10 @@ sub DESTROY {
 
 	if ($this->{'isSTDERR'}) {
 		## restore signal handlers
+		{ local $^W = 0; ## hey, why can't I undef $SIG{__DIE__} w/out warns?
 		$SIG{__WARN__} = $this->{'warn_sub'};
 		$SIG{__DIE__}  = $this->{'die_sub'};
+		}
 	}
 
 	## close syslog
@@ -108,7 +108,7 @@ __END__
 
 =head1 NAME
 
-Tie::Syslog - Perl extension for tie'ing a filehandle to Syslog
+Tie::Syslog - Tie a filehandle to Syslog. If you Tie STDERR, then all STDERR errors are automatically caught, or you can debug by Carp'ing to STDERR, etc. (Good for CGI error logging.)
 
 =head1 SYNOPSIS
 
@@ -228,17 +228,19 @@ information into those channels.
 If you do not specify an identity (2nd arg) to tie() it defaults to
 the name of the executable via special var $0. It is split by the
 character '/', so non-unix systems will end up with a "full name"
-for its identity, if left unspecified.
+for its identity, if left unspecified. I could use File::Spec for
+non-unix paths -- but how many of you non-unix persons out there
+have syslog and would like this? Tell me...
 
 =head1 AUTHOR
 
-Copyright (C) 1999 Broc Seib. All rights reserved. This program is free
+Copyright (c) 2000 Broc Seib. All rights reserved. This program is free
 software; you can redistribute it and/or modify it under the same terms as
 Perl itself.
 
 =head1 REVISION
 
-$Id: Syslog.pm,v 1.5 1999/09/02 05:36:38 bseib Exp $
+$Id: Syslog.pm,v 1.6 2000/11/09 22:15:37 bseib Exp $
 
 =head1 SEE ALSO
 

@@ -1,7 +1,7 @@
 Tie::Syslog
 ===========
 
-Copyright (C) 1999 Broc Seib. All rights reserved. This program
+Copyright (c) 2000 Broc Seib. All rights reserved. This program
 is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.
 
@@ -23,7 +23,6 @@ SYNOPSIS
 
 DESCRIPTION
 ===========
-
 This module allows you to tie a filehandle (output only) to
 syslog. This becomes useful in general when you want to
 capture any activity that happens on STDERR and see that it
@@ -65,17 +64,17 @@ not have the ability to install this module in the standard
 perl library path. You may direct the installation into your
 own space, e.g.,
 
-	perl Makefile.PL LIB='/home/bseib/lib'
+	perl Makefile.PL LIB='/home/your_login/lib'
 
 or perhaps the entire installation, e.g.,
 
-	perl Makefile.PL PREFIX='/home/bseib'
+	perl Makefile.PL PREFIX='/home/your_login'
 
 If you make the installation into your own directory, then
 remember that you must tell perl where to search for modules
 before trying to 'use' them. For example:
 
-	use lib '/home/bseib/lib';
+	use lib '/home/your_login/lib';
 	use Tie::Syslog;
 
 

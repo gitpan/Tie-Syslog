@@ -1,6 +1,13 @@
 Revision history for Perl extension Tie::Syslog.
 
-1.02  Sun Aug 29 20:37:23 EST 1999
+1.04  Thu Nov  9 16:43:49 EST 2000
+    - Seems that you cannot undef $SIG{__DIE__}, nor assign undef
+      to it without a warning. I could not figure out how to address
+      this short of simply suppressing warnings in a little block.
+    - I use $^S inside the $SIG{__DIE__} handler rather than poking
+      back thru the stack looking for "(eval)".
+
+1.03  Sun Aug 29 20:37:23 EST 1999
     - Per Dustin Harris, allow setlogsock() options to be optionally
       passed to the tie() instead of hardwired to 'inet'.
     - Minor docs cleanup.
