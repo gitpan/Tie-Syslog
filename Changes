@@ -1,0 +1,8 @@
+Revision history for Perl extension Tie::Syslog.
+
+1.01  Fri Mar 12 17:21:46 EST 1999
+    - put together pieces to make first distributable version.
+
+0.01  Wed Mar 10 15:50:38 1999
+	- original version; created by h2xs 1.18
+

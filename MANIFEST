@@ -1,0 +1,7 @@
+Changes
+MANIFEST
+Makefile.PL
+README
+Syslog.pm
+test.pl
+test_die

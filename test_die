@@ -1,0 +1,74 @@
+#!/usr/local/bin/perl -w
+#
+#	$Id: test_die,v 1.1 1999/03/12 22:30:52 bseib Exp $
+##
+#	'test_die'		
+#
+#	Description:	What if we want to capture STDERR from die()?
+#					What if that die() is an exception inside an
+#					eval()? Other weird scopes?
+#
+#	Author:			Broc Seib
+#	Date:			Thu Mar 11 12:50:07 EST 1999
+##
+
+
+#  OK, my conclusion here is that we can poke back thru the caller
+#  stack to see if there is an '(eval)' subname somewhere in the
+#  stack, and if so, then the 'die' may be expected in some sort
+#  of exception handling case, so we'll want to ignore that case.
+#
+#  Output of a stack frame would look like:
+#
+#    Blah|./t3|43|main::__ANON__|1|
+#    Blah|./t3|46|Blah::__ANON__||
+#    Blah|./t3|40|(eval)||
+
+
+$SIG{'__DIE__'} = sub {
+	print STDERR "=> @_ <=\n";
+	#print STDERR "=> $@ <=\n";
+	my $i = 0;
+	my @x;
+	while ( @x=caller($i++) ) {
+		print join('|',map {$_||''} @x), "\n";
+	}
+};
+
+sub odd5 { die "odd death 5."; }
+my $odd6 = sub { die "odd death 6."; };
+
+package Blah;
+
+#die "goodbye cruel world.\n";
+
+my $odd1 = sub { die "odd death 1."; };
+
+eval {
+	print "I'm inside the eval now.\n";
+
+	my $odd2 = sub { die "odd death 2."; };
+
+#	&$odd1;
+	&$odd2;
+	die "odd death 3.";
+#	odd4();
+#	main::odd5();
+	&$main::odd6;
+};
+
+print "but i got here anyway,\n";
+
+
+sub odd4 { die "odd death 4."; }
+
+
+
+
+
+
+
+##
+#	EOF
+##
+
