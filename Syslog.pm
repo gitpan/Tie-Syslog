@@ -4,7 +4,7 @@ package Tie::Syslog;
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 
-$VERSION = '1.02';
+$VERSION = '1.03';
 
 use Sys::Syslog;
 
@@ -238,7 +238,7 @@ Perl itself.
 
 =head1 REVISION
 
-$Id: Syslog.pm,v 1.4 1999/09/02 04:02:48 bseib Exp $
+$Id: Syslog.pm,v 1.5 1999/09/02 05:36:38 bseib Exp $
 
 =head1 SEE ALSO
 
