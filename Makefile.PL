@@ -1,7 +1,20 @@
+use 5.006;
+use strict;
+use warnings;
 use ExtUtils::MakeMaker;
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
+
 WriteMakefile(
-    'NAME'	=> 'Tie::Syslog',
-    'VERSION_FROM' => 'Syslog.pm', # finds $VERSION
+    NAME                => 'Tie::Syslog',
+    AUTHOR              => q{Giacomo Montagner <kromg@entirelyunlike.net>},
+    VERSION_FROM        => 'lib/Tie/Syslog.pm',
+    ABSTRACT_FROM       => 'lib/Tie/Syslog.pm',
+    ($ExtUtils::MakeMaker::VERSION >= 6.3002
+      ? ('LICENSE'=> 'perl')
+      : ()),
+    PL_FILES            => {},
+    PREREQ_PM => {
+        'Test::More' => 0,
+    },
+    dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean               => { FILES => 'Tie-Syslog-*' },
 );
