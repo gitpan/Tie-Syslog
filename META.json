@@ -1,5 +1,5 @@
 {
-   "abstract" : "unknown",
+   "abstract" : "Tie a filehandle to Syslog.",
    "author" : [
       "Giacomo Montagner <kromg@entirelyunlike.net>"
    ],
@@ -32,10 +32,12 @@
       },
       "runtime" : {
          "requires" : {
+            "Carp" : "0",
+            "Sys::Syslog" : "0",
             "Test::More" : "0"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "2.02"
+   "version" : "2.03"
 }
